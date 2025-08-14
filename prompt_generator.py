@@ -41,6 +41,21 @@ class MedicalPromptGenerator:
             "prevention_advice": "مشاوره پیشگیری",
             "emergency_situations": "شرایط اورژانسی"
         }
+        self.conversation_styles = [
+            "formal_medical",      
+            "friendly_doctor",     
+            "emergency_urgent",   
+            "educational",         
+            "reassuring"          
+        ]
+        self.conversation_styles_persian = [
+            "formal_medical": "رسمی پزشکی",
+            "friendly_doctor": "دوستانه",
+            "emergency_urgent": "اورژانسی",
+            "educational": "آموزشی",
+            "reassuring": "دلگرم‌کننده",
+        ]        
+
 
     def load_diseases_data(self) -> List[Dict]:
         """
@@ -53,7 +68,7 @@ class MedicalPromptGenerator:
             with open(self.json_file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
                 print(f"✅ Successfully loaded {len(data)} diseases from {self.json_file_path}")
-                return data
+                return data['diseases']
         except FileNotFoundError:
             print(f"❌ Error: File '{self.json_file_path}' not found!")
             return []
@@ -77,7 +92,7 @@ class MedicalPromptGenerator:
             Formatted prompt string
         """
         if not self.diseases_data:
-            return "❌ No disease data available. Please check the JSON file."
+            return "No disease data available. Please check the JSON file."
         
         # Random selections if not specified
         if disease_data is None:
@@ -88,10 +103,15 @@ class MedicalPromptGenerator:
             
         if conv_type is None:
             conv_type = random.choice(self.conversation_types)
-        
+
+        if conv_style is None:
+            conv_style = random.choice(self.conversation_style)
+
         # Convert conversation type to Persian
         conv_type_persian = self.conversation_types_persian.get(conv_type, conv_type)
-        
+        # Convert conversation style to Persian
+        conv_style_persian = self.conversation_styles_persian.get(conv_style, conv_style)
+
         # Format disease data nicely
         disease_info = json.dumps(disease_data, ensure_ascii=False, indent=2)
         
@@ -139,7 +159,7 @@ class MedicalPromptGenerator:
             
             prompts.append({
                 "prompt_number": i + 1,
-                "disease_name": disease.get("name", "Unknown") if disease else "No disease data",
+                "disease_name": disease.get("name_persian")+ " " +disease.get("name_english") if disease else "No disease data",
                 "persona": persona,
                 "conversation_type": conv_type,
                 "conversation_type_persian": self.conversation_types_persian.get(conv_type, conv_type),
@@ -200,10 +220,9 @@ def main():
     
     # Initialize the generator
     generator = MedicalPromptGenerator("./diseases-json-file/merged_diseases.json")
-    
     # Display available data
     generator.display_available_data()
-    
+
     if not generator.diseases_data:
         print("\n❌ Cannot generate prompts without disease data. Please check the JSON file.")
         return
@@ -222,7 +241,7 @@ def main():
     print("GENERATING MULTIPLE PROMPTS:")
     print("="*50)
     
-    prompts = generator.generate_multiple_prompts(count=3)
+    prompts = generator.generate_multiple_prompts(count=100)
     
     # Display the prompts
     for prompt_info in prompts:
